@@ -265,13 +265,35 @@
             const newDirection = (currentSort.column === column && currentSort.direction === 'asc') ? 'desc' : 'asc';
             currentSort = { column, direction: newDirection };
             const collator = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
+
             processedData.sort((a, b) => {
-                let valA = a[column], valB = b[column];
-                if (['MMSE', 'GDS', 'RUD', 'NPIES'].includes(column)) {
-                    valA = a.evals[column]?.dateObj; valB = b.evals[column]?.dateObj;
+                let valA, valB;
+
+                if (column.endsWith('Date')) {
+                    const type = column.replace('Date', '');
+                    valA = a.evals[type]?.dateObj;
+                    valB = b.evals[type]?.dateObj;
+                } else if (column.endsWith('Score')) {
+                    const type = column.replace('Score', '');
+                    valA = a.evals[type]?.sortResult;
+                    valB = b.evals[type]?.sortResult;
+                } else {
+                    valA = a[column];
+                    valB = b[column];
                 }
-                if (valA == null) return 1; if (valB == null) return -1;
-                const comparison = (valA instanceof Date && valB instanceof Date) ? valA.getTime() - valB.getTime() : collator.compare(String(valA), String(valB));
+
+                if (valA === null || valA === undefined) return 1;
+                if (valB === null || valB === undefined) return -1;
+
+                let comparison;
+                if (valA instanceof Date && valB instanceof Date) {
+                    comparison = valA.getTime() - valB.getTime();
+                } else if (typeof valA === 'number' && typeof valB === 'number') {
+                    comparison = valA - valB;
+                } else {
+                    comparison = collator.compare(String(valA), String(valB));
+                }
+
                 return currentSort.direction === 'asc' ? comparison : -comparison;
             });
             renderTable();
@@ -289,17 +311,20 @@
                             <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="birthDate">Naissance<span class="sort-indicator"></span></th>
                             <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="Entrée">Entrée<span class="sort-indicator"></span></th>
                             <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="GIR">GIR<span class="sort-indicator"></span></th>
-                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="MMSE">MMSE<span class="sort-indicator"></span></th>
-                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="GDS">GDS<span class="sort-indicator"></span></th>
-                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="RUD">RUD<span class="sort-indicator"></span></th>
-                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="NPIES">NPI-ES<span class="sort-indicator"></span></th>
-                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Interprétations</th>
+                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="MMSEDate">MMSE Date<span class="sort-indicator"></span></th>
+                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="MMSEScore">MMSE Score<span class="sort-indicator"></span></th>
+                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="GDSDate">GDS Date<span class="sort-indicator"></span></th>
+                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="GDSScore">GDS Score<span class="sort-indicator"></span></th>
+                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="RUDDate">RUD Date<span class="sort-indicator"></span></th>
+                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="RUDScore">RUD Score<span class="sort-indicator"></span></th>
+                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="NPIESDate">NPI-ES Date<span class="sort-indicator"></span></th>
+                            <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" data-column="NPIESScore">NPI-ES Score<span class="sort-indicator"></span></th>
                         </tr>
                     </thead>
                     <tbody>`;
 
             processedData.forEach((resident, index) => {
-                const { evals, mmseInterp, gdsInterp } = resident;
+                const { evals } = resident;
                 tableHtml += `
                     <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-blue-50">
                         <td class="py-2 px-3 border-b border-slate-200 text-sm">${resident['N° de chambre'] || ''}</td>
@@ -308,14 +333,14 @@
                         <td class="py-2 px-3 border-b border-slate-200 text-sm">${formatDate(resident.birthDate)}</td>
                         <td class="py-2 px-3 border-b border-slate-200 text-sm">${formatDate(resident['Entrée'])}</td>
                         <td class="py-2 px-3 border-b border-slate-200 text-sm">${resident['GIR'] || ''}</td>
-                        <td class="py-2 px-3 border-b border-slate-200 text-sm">${evals.MMSE ? `${evals.MMSE.date}<br><b>${evals.MMSE.result}</b>` : 'N/A'}</td>
-                        <td class="py-2 px-3 border-b border-slate-200 text-sm">${evals.GDS ? `${evals.GDS.date}<br><b>${evals.GDS.result}</b>` : 'N/A'}</td>
-                        <td class="py-2 px-3 border-b border-slate-200 text-sm">${evals.RUD ? `${evals.RUD.date}<br><b>${evals.RUD.result}</b>` : 'N/A'}</td>
-                        <td class="py-2 px-3 border-b border-slate-200 text-sm">${evals.NPIES ? `${evals.NPIES.date}<br><b>${evals.NPIES.result}</b>` : 'N/A'}</td>
-                        <td class="py-2 px-3 border-b border-slate-200 text-xs">
-                            ${mmseInterp ? `<b>MMSE:</b> ${mmseInterp.interpretation}<br>` : ''}
-                            ${gdsInterp ? `<b>GDS:</b> ${gdsInterp.interpretation}` : ''}
-                        </td>
+                        <td class="py-2 px-3 border-b border-slate-200 text-sm">${evals.MMSE ? evals.MMSE.date : 'N/A'}</td>
+                        <td class="py-2 px-3 border-b border-slate-200 text-sm"><b>${evals.MMSE ? evals.MMSE.result : 'N/A'}</b></td>
+                        <td class="py-2 px-3 border-b border-slate-200 text-sm">${evals.GDS ? evals.GDS.date : 'N/A'}</td>
+                        <td class="py-2 px-3 border-b border-slate-200 text-sm"><b>${evals.GDS ? evals.GDS.result : 'N/A'}</b></td>
+                        <td class="py-2 px-3 border-b border-slate-200 text-sm">${evals.RUD ? evals.RUD.date : 'N/A'}</td>
+                        <td class="py-2 px-3 border-b border-slate-200 text-sm"><b>${evals.RUD ? evals.RUD.result : 'N/A'}</b></td>
+                        <td class="py-2 px-3 border-b border-slate-200 text-sm">${evals.NPIES ? evals.NPIES.date : 'N/A'}</td>
+                        <td class="py-2 px-3 border-b border-slate-200 text-sm"><b>${evals.NPIES ? evals.NPIES.result : 'N/A'}</b></td>
                     </tr>`;
             });
             tableHtml += '</tbody></table>';
@@ -362,13 +387,33 @@
 
                     let typeKey = ['MMSE', 'GDS', 'RUD', 'NPI-ES'].find(k => ev['Type'].includes(k.replace('NPI-ES', 'NPIES')));
                     if(typeKey === 'NPI-ES') typeKey = 'NPIES';
-                    const resultRaw = ev['Résultat'];
-                    const result = typeof resultRaw === 'string' ? (resultRaw.match(/^\d+/) || [resultRaw])[0] : resultRaw;
 
-                    if (typeKey && result != null) {
-                        const existing = residentEvals[normalizedName][typeKey];
-                        if (!existing || evDate > existing.dateObj) {
-                            residentEvals[normalizedName][typeKey] = { date: formatDate(evDate), dateObj: evDate, result: String(result) };
+                    const resultRaw = ev['Résultat'];
+                    let displayResult, sortResult;
+
+                    if (typeof resultRaw === 'string' && /non[^\w]*[eé]valuable/i.test(resultRaw)) {
+                        displayResult = 'NE';
+                        sortResult = 9999;
+                    } else {
+                        const numericMatch = String(resultRaw).match(/\d+/);
+                        if (numericMatch) {
+                            displayResult = numericMatch[0];
+                            sortResult = parseInt(numericMatch[0], 10);
+                        } else {
+                            displayResult = resultRaw || 'N/A';
+                            sortResult = null;
+                        }
+                    }
+
+                    if (typeKey) {
+                         const existing = residentEvals[normalizedName][typeKey];
+                         if (!existing || evDate > existing.dateObj) {
+                            residentEvals[normalizedName][typeKey] = {
+                                date: formatDate(evDate),
+                                dateObj: evDate,
+                                result: displayResult,
+                                sortResult: sortResult
+                            };
                         }
                     }
                 });
@@ -379,9 +424,7 @@
                     return {
                         'fullName': r['Résident'],'normalizedName': normalizedName,'N° de chambre': r['N° de chambre'],
                         'Âge': r['Âge'],'birthDate': r['Date naissance'],'Entrée': r['Dernière entrée'] || r['Entrée'],
-                        'GIR': r['GIR'], evals,
-                        mmseInterp: evals.MMSE ? getMmseInterpretation(evals.MMSE.result) : null,
-                        gdsInterp: evals.GDS ? getGdsInterpretation(evals.GDS.result) : null
+                        'GIR': r['GIR'], evals
                     };
                 });
 
@@ -417,9 +460,7 @@
                 'RUD Résultat': row.evals.RUD?.result,
                 'RUD Date': row.evals.RUD?.date,
                 'NPI-ES Résultat': row.evals.NPIES?.result,
-                'NPI-ES Date': row.evals.NPIES?.date,
-                'Interprétation MMSE': row.mmseInterp?.interpretation,
-                'Interprétation GDS': row.gdsInterp?.interpretation,
+                'NPI-ES Date': row.evals.NPIES?.date
             }));
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();

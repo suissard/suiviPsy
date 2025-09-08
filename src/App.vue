@@ -115,7 +115,46 @@ function processFile(file) {
 
 // --- Data Normalization & Interpretation ---
 const formatDate = (date) => date instanceof Date ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}` : (date || '');
-const normalizeResidentName = (name) => typeof name !== 'string' ? '' : name.replace(/\s*\\n\s*/g, ' ').replace(/^(Mme\\.|M\\.|Monsieur|Madame)\s*/, '').replace(' Née ', ' ').split(' (')[0].replace(/,/g, '').trim();
+
+/**
+ * Parses a complex resident name string using regex and returns a standardized full name.
+ * @param {string} rawName - The raw name string, potentially with line breaks.
+ * @returns {string} A cleaned, standardized full name.
+ */
+function normalizeName(rawName) {
+  if (typeof rawName !== 'string' || !rawName.trim()) {
+    return '';
+  }
+
+  // Regex to capture all parts of the name, handling multiple lines and variations.
+  const nameRegex = /^"?\s*(?<title>M\.|Mme\.)\s+(?<lastName>[A-Z'-]+(?:\s[A-Z'-]+)*)\s+(?<firstName>[A-Za-zÀ-ÿ'-]+(?:(?:,\s*|\s|-)[A-Za-zÀ-ÿ'-]+)*?)\s*(?:\s*Née\s+(?<maidenLastName>[A-Z'-]+(?:\s[A-Z'-]+)*)\s+(?<maidenFirstName>[A-Za-zÀ-ÿ'-]+(?:(?:,\s*|\s|-)[A-Za-zÀ-ÿ'-]+)*))?\s*\((?<gender>F|H)\)(?:\s*(?<nir>\d{15})\s*\[NIR\])?\s*"?$/;
+
+  // First, replace all sequences of whitespace characters (including newlines) with a single space.
+  const singleLineName = rawName.replace(/\s+/g, ' ').trim();
+
+  const match = singleLineName.match(nameRegex);
+
+  if (!match) {
+    // Fallback for names that don't match the complex regex
+    return singleLineName.replace(/^(Mme\.|M\.|Monsieur|Madame)\s*/, '').split(' (')[0].replace(/,/g, '').trim();
+  }
+
+  const { lastName, firstName, maidenLastName, maidenFirstName } = match.groups;
+
+  // Further clean up each part to ensure consistency
+  const clean = (str) => str ? str.replace(/,/g, ' ').replace(/\s+/g, ' ').trim() : '';
+
+  const parts = [
+    clean(lastName),
+    clean(firstName),
+    clean(maidenLastName),
+    clean(maidenFirstName)
+  ].filter(Boolean); // Filter out any empty parts
+
+  return parts.join(' ');
+}
+
+const normalizeResidentName = (name) => normalizeName(name);
 const getMmseInterpretation = (scoreStr) => {
     const score = parseInt(scoreStr, 10);
     if (isNaN(score)) return { interpretation: scoreStr || "N/A", risk: "Inconnu" };

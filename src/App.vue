@@ -13,6 +13,8 @@ const generating = ref(false);
 const currentSort = ref({ column: 'N° de chambre', direction: 'asc' });
 
 // --- File Handling State ---
+const residentsFileInput = ref(null);
+const evaluationsFileInput = ref(null);
 const residentsFileStatus = ref('');
 const residentsDropZoneState = ref(''); // 'success' or 'error'
 const evaluationsFileStatus = ref('');
@@ -35,7 +37,7 @@ function setupDragDrop(e, type) {
 
 function handleDrop(e, type) {
   e.preventDefault();
-  const fileInput = type === 'resident' ? document.getElementById('residentsFile') : document.getElementById('evaluationsFile');
+  const fileInput = type === 'resident' ? residentsFileInput.value : evaluationsFileInput.value;
   fileInput.files = e.dataTransfer.files;
   handleFileSelect({ target: fileInput }, type);
   if (type === 'resident') {
@@ -252,9 +254,9 @@ function exportReport() {
           <label for="residentsFile" class="mb-2 font-semibold text-slate-700">1. Fichier des Résidents (.xlsx,
             .csv)</label>
           <div :class="['file-drop-area', 'border-2', 'border-dashed', 'border-slate-300', 'rounded-lg', 'p-4', 'text-center', 'cursor-pointer', residentsDropZoneState]"
-            @click="document.getElementById('residentsFile').click()" @dragover="e => setupDragDrop(e, 'resident')"
+            @click="residentsFileInput.click()" @dragover="e => setupDragDrop(e, 'resident')"
             @dragleave="() => resetDropZoneState('resident')" @drop="e => handleDrop(e, 'resident')">
-            <input type="file" id="residentsFile"
+            <input type="file" id="residentsFile" ref="residentsFileInput"
               accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               class="hidden" @change="e => handleFileSelect(e, 'resident')">
             <svg class="mx-auto h-10 w-10 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 24 24"
@@ -273,9 +275,9 @@ function exportReport() {
           <label for="evaluationsFile" class="mb-2 font-semibold text-slate-700">2. Fichier des Évaluations (.xlsx,
             .csv)</label>
           <div :class="['file-drop-area', 'border-2', 'border-dashed', 'border-slate-300', 'rounded-lg', 'p-4', 'text-center', 'cursor-pointer', evaluationsDropZoneState]"
-            @click="document.getElementById('evaluationsFile').click()" @dragover="e => setupDragDrop(e, 'evaluation')"
+            @click="evaluationsFileInput.click()" @dragover="e => setupDragDrop(e, 'evaluation')"
             @dragleave="() => resetDropZoneState('evaluation')" @drop="e => handleDrop(e, 'evaluation')">
-            <input type="file" id="evaluationsFile"
+            <input type="file" id="evaluationsFile" ref="evaluationsFileInput"
               accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               class="hidden" @change="e => handleFileSelect(e, 'evaluation')">
             <svg class="mx-auto h-10 w-10 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 24 24"

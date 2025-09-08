@@ -155,21 +155,6 @@ function normalizeName(rawName) {
 }
 
 const normalizeResidentName = (name) => normalizeName(name);
-const getMmseInterpretation = (scoreStr) => {
-    const score = parseInt(scoreStr, 10);
-    if (isNaN(score)) return { interpretation: scoreStr || "N/A", risk: "Inconnu" };
-    if (score <= 10) return { interpretation: "Suspicion d'un syndrome démentiel sévère.", risk: "Démence" };
-    if (score <= 18) return { interpretation: "Suspicion d'un syndrome démentiel modéré.", risk: "Démence" };
-    if (score <= 24) return { interpretation: "Suspicion d'un syndrome démentiel léger.", risk: "Démence" };
-    return { interpretation: "Absence de trouble cognitif.", risk: null };
-};
-const getGdsInterpretation = (scoreStr) => {
-    const score = parseInt(scoreStr, 10);
-    if (isNaN(score)) return { interpretation: scoreStr || "N/A", risk: "Inconnu" };
-    if (score >= 10) return { interpretation: "Très forte probabilité de dépression.", risk: "Dépression" };
-    if (score >= 5) return { interpretation: "Forte probabilité de dépression.", risk: "Dépression" };
-    return { interpretation: "Aucun risque de dépression.", risk: null };
-};
 
 // --- Sorting Logic ---
 function sortData(column) {
@@ -214,7 +199,17 @@ async function generateReport() {
       let typeKey = ['MMSE', 'GDS', 'RUD', 'NPI-ES'].find(k => ev['Type'].includes(k.replace('NPI-ES', 'NPIES')));
       if(typeKey === 'NPI-ES') typeKey = 'NPIES';
       const resultRaw = ev['Résultat'];
-      const result = typeof resultRaw === 'string' ? (resultRaw.match(/^\\d+/) || [resultRaw])[0] : resultRaw;
+      let result;
+      if (typeof resultRaw === 'string') {
+        if (resultRaw === 'Non évaluable Résident non évaluable') {
+          result = 'NE';
+        } else {
+          const match = resultRaw.match(/^\s*\d+/);
+          result = match ? match[0].trim() : resultRaw;
+        }
+      } else {
+        result = resultRaw;
+      }
 
       if (typeKey && result != null) {
         const existing = residentEvals[normalizedName][typeKey];
@@ -236,8 +231,6 @@ async function generateReport() {
         'Entrée': r['Dernière entrée'] || r['Entrée'],
         'GIR': r['GIR'],
         evals,
-        mmseInterp: evals.MMSE ? getMmseInterpretation(evals.MMSE.result) : null,
-        gdsInterp: evals.GDS ? getGdsInterpretation(evals.GDS.result) : null
       };
     });
 
@@ -273,8 +266,6 @@ function exportReport() {
     'RUD Date': row.evals.RUD?.date,
     'NPI-ES Résultat': row.evals.NPIES?.result,
     'NPI-ES Date': row.evals.NPIES?.date,
-    'Interprétation MMSE': row.mmseInterp?.interpretation,
-    'Interprétation GDS': row.gdsInterp?.interpretation,
   }));
   const worksheet = XLSX.utils.json_to_sheet(dataToExport);
   const workbook = XLSX.utils.book_new();
@@ -425,7 +416,7 @@ function exportReport() {
                     'asc' ? '▲' : '▼') : '' }}</span>
                 </th>
                 <th class="py-2 px-3 border-b text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Interprétations</th>
+                  </th>
               </tr>
             </thead>
             <tbody>
@@ -448,10 +439,6 @@ function exportReport() {
                 </td>
                 <td class="py-2 px-3 border-b border-slate-200 text-sm"
                   v-html="resident.evals.NPIES ? `${resident.evals.NPIES.date}<br><b>${resident.evals.NPIES.result}</b>` : 'N/A'">
-                </td>
-                <td class="py-2 px-3 border-b border-slate-200 text-xs">
-                  <span v-if="resident.mmseInterp" v-html="`<b>MMSE:</b> ${resident.mmseInterp.interpretation}<br>`" />
-                  <span v-if="resident.gdsInterp" v-html="`<b>GDS:</b> ${resident.gdsInterp.interpretation}`" />
                 </td>
               </tr>
             </tbody>

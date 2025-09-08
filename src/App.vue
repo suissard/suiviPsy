@@ -201,7 +201,7 @@ async function generateReport() {
       const resultRaw = ev['Résultat'];
       let result;
       if (typeof resultRaw === 'string') {
-        if (resultRaw === 'Non évaluable Résident non évaluable') {
+        if (resultRaw.trim() === 'Non évaluable' || resultRaw.trim() === 'Non évaluable Résident non évaluable') {
           result = 'NE';
         } else {
           const match = resultRaw.match(/^\s*\d+/);

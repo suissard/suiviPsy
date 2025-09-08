@@ -115,7 +115,7 @@ function processFile(file) {
 
 // --- Data Normalization & Interpretation ---
 const formatDate = (date) => date instanceof Date ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}` : (date || '');
-const normalizeResidentName = (name) => typeof name !== 'string' ? '' : name.replace(/\s*\\n\s*/g, ' ').replace(/^(Mme\\.|M\\.|Monsieur|Madame)\s*/, '').split(' Née ')[0].split(' (')[0].trim();
+const normalizeResidentName = (name) => typeof name !== 'string' ? '' : name.replace(/\s*\\n\s*/g, ' ').replace(/^(Mme\\.|M\\.|Monsieur|Madame)\s*/, '').replace(' Née ', ' ').split(' (')[0].replace(/,/g, '').trim();
 const getMmseInterpretation = (scoreStr) => {
     const score = parseInt(scoreStr, 10);
     if (isNaN(score)) return { interpretation: scoreStr || "N/A", risk: "Inconnu" };

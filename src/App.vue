@@ -275,61 +275,47 @@ function exportReport() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col items-center py-8 px-4 bg-slate-50 text-slate-800">
+  <div class="min-h-screen flex flex-col items-center py-8 px-4 bg-slate-50 text-slate-800 mdc-typography">
     <!-- Input Section -->
     <div class="w-full max-w-4xl bg-white p-6 md:p-8 rounded-2xl shadow-lg">
       <div class="grid md:grid-cols-2 gap-x-6 gap-y-4">
         <!-- Residents File Input -->
         <div class="flex flex-col">
           <label for="residentsFile" class="mb-1.5 font-medium text-slate-700 text-sm">1. Fichier des Résidents (.xlsx, .csv)</label>
-          <div
-            :class="['file-drop-area', 'border-2', 'border-dashed', 'border-slate-300', 'rounded-md', 'p-2', 'text-center', 'cursor-pointer', 'flex', 'items-center', 'gap-3', residentsDropZoneState]"
-            @click="residentsFileInput.click()"
-            @dragover="e => setupDragDrop(e, 'resident')"
-            @dragleave="() => resetDropZoneState('resident')"
-            @drop="e => handleDrop(e, 'resident')"
-          >
-            <input type="file" id="residentsFile" ref="residentsFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="e => handleFileSelect(e, 'resident')">
-            <div class="flex-shrink-0 bg-blue-100 rounded-full p-1.5">
-              <svg class="h-5 w-5 text-blue-600" stroke="currentColor" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-            </div>
-            <div class="text-left">
-              <p class="text-xs text-slate-600"><span class="font-semibold text-blue-700">Cliquez pour choisir</span> ou glissez-déposez</p>
-              <p class="text-[11px] text-slate-500 mt-0.5 truncate">{{ residentsFileStatus }}</p>
+          <div class="mdc-text-field mdc-text-field--outlined" @click="residentsFileInput.click()">
+            <input type="text" class="mdc-text-field__input" :value="residentsFileStatus" readonly>
+            <div class="mdc-notched-outline">
+              <div class="mdc-notched-outline__leading"></div>
+              <div class="mdc-notched-outline__notch">
+                <label class="mdc-floating-label">Fichier des Résidents</label>
+              </div>
+              <div class="mdc-notched-outline__trailing"></div>
             </div>
           </div>
+          <input type="file" id="residentsFile" ref="residentsFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="e => handleFileSelect(e, 'resident')">
         </div>
 
         <!-- Evaluations File Input -->
         <div class="flex flex-col">
           <label for="evaluationsFile" class="mb-1.5 font-medium text-slate-700 text-sm">2. Fichier des Évaluations (.xlsx, .csv)</label>
-          <div
-            :class="['file-drop-area', 'border-2', 'border-dashed', 'border-slate-300', 'rounded-md', 'p-2', 'text-center', 'cursor-pointer', 'flex', 'items-center', 'gap-3', evaluationsDropZoneState]"
-            @click="evaluationsFileInput.click()"
-            @dragover="e => setupDragDrop(e, 'evaluation')"
-            @dragleave="() => resetDropZoneState('evaluation')"
-            @drop="e => handleDrop(e, 'evaluation')"
-          >
-            <input type="file" id="evaluationsFile" ref="evaluationsFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="e => handleFileSelect(e, 'evaluation')">
-             <div class="flex-shrink-0 bg-blue-100 rounded-full p-1.5">
-                <svg class="h-5 w-5 text-blue-600" stroke="currentColor" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-            </div>
-            <div class="text-left">
-              <p class="text-xs text-slate-600"><span class="font-semibold text-blue-700">Cliquez pour choisir</span> ou glissez-déposez</p>
-              <p class="text-[11px] text-slate-500 mt-0.5 truncate">{{ evaluationsFileStatus }}</p>
+          <div class="mdc-text-field mdc-text-field--outlined" @click="evaluationsFileInput.click()">
+            <input type="text" class="mdc-text-field__input" :value="evaluationsFileStatus" readonly>
+            <div class="mdc-notched-outline">
+              <div class="mdc-notched-outline__leading"></div>
+              <div class="mdc-notched-outline__notch">
+                <label class="mdc-floating-label">Fichier des Évaluations</label>
+              </div>
+              <div class="mdc-notched-outline__trailing"></div>
             </div>
           </div>
+          <input type="file" id="evaluationsFile" ref="evaluationsFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="e => handleFileSelect(e, 'evaluation')">
         </div>
       </div>
 
       <div class="mt-6 text-center">
         <button @click="generateReport" :disabled="isGenerateBtnDisabled"
-          class="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-150 ease-in-out transform active:scale-95 disabled:bg-slate-400 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none">
-          {{ generating ? 'Génération en cours...' : 'Générer le rapport' }}
+          class="mdc-button mdc-button--raised">
+          <span class="mdc-button__label">{{ generating ? 'Génération en cours...' : 'Générer le rapport' }}</span>
         </button>
       </div>
       <p v-if="errorMessage" class="text-red-500 text-center mt-4 text-sm font-medium">{{ errorMessage }}</p>
@@ -352,54 +338,34 @@ function exportReport() {
           </div>
         </div>
         <div id="print-section" class="overflow-x-auto rounded-lg border border-slate-200/75">
-          <table class="min-w-full bg-white">
-            <thead class="bg-slate-50 border-b-2 border-slate-200">
-              <tr>
-                <th @click="sortData('N° de chambre')" data-column="N° de chambre" :class="{ 'sorted': currentSort.column === 'N° de chambre' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Ch.<span class="sort-indicator">{{ currentSort.column === 'N° de chambre' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('fullName')" data-column="fullName" :class="{ 'sorted': currentSort.column === 'fullName' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Nom Prénom<span class="sort-indicator">{{ currentSort.column === 'fullName' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('Âge')" data-column="Âge" :class="{ 'sorted': currentSort.column === 'Âge' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Age<span class="sort-indicator">{{ currentSort.column === 'Âge' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('birthDate')" data-column="birthDate" :class="{ 'sorted': currentSort.column === 'birthDate' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Naissance<span class="sort-indicator">{{ currentSort.column === 'birthDate' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('Entrée')" data-column="Entrée" :class="{ 'sorted': currentSort.column === 'Entrée' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Entrée<span class="sort-indicator">{{ currentSort.column === 'Entrée' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('GIR')" data-column="GIR" :class="{ 'sorted': currentSort.column === 'GIR' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  GIR<span class="sort-indicator">{{ currentSort.column === 'GIR' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('MMSE')" data-column="MMSE" :class="{ 'sorted': currentSort.column === 'MMSE' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  MMSE<span class="sort-indicator">{{ currentSort.column === 'MMSE' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('GDS')" data-column="GDS" :class="{ 'sorted': currentSort.column === 'GDS' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  GDS<span class="sort-indicator">{{ currentSort.column === 'GDS' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('RUD')" data-column="RUD" :class="{ 'sorted': currentSort.column === 'RUD' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  RUD<span class="sort-indicator">{{ currentSort.column === 'RUD' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th @click="sortData('NPIES')" data-column="NPIES" :class="{ 'sorted': currentSort.column === 'NPIES' }" class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  NPI-ES<span class="sort-indicator">{{ currentSort.column === 'NPIES' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th class="py-2.5 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider"></th>
+          <table class="mdc-data-table__table">
+            <thead class="mdc-data-table__header">
+              <tr class="mdc-data-table__header-row">
+                <th @click="sortData('N° de chambre')" class="mdc-data-table__header-cell">Ch.</th>
+                <th @click="sortData('fullName')" class="mdc-data-table__header-cell">Nom Prénom</th>
+                <th @click="sortData('Âge')" class="mdc-data-table__header-cell">Age</th>
+                <th @click="sortData('birthDate')" class="mdc-data-table__header-cell">Naissance</th>
+                <th @click="sortData('Entrée')" class="mdc-data-table__header-cell">Entrée</th>
+                <th @click="sortData('GIR')" class="mdc-data-table__header-cell">GIR</th>
+                <th @click="sortData('MMSE')" class="mdc-data-table__header-cell">MMSE</th>
+                <th @click="sortData('GDS')" class="mdc-data-table__header-cell">GDS</th>
+                <th @click="sortData('RUD')" class="mdc-data-table__header-cell">RUD</th>
+                <th @click="sortData('NPIES')" class="mdc-data-table__header-cell">NPI-ES</th>
+                <th class="mdc-data-table__header-cell"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200/75">
-              <tr v-for="(resident, index) in processedData" :key="resident.normalizedName" class="hover:bg-slate-50 transition-colors duration-150">
-                <td class="py-2 px-3 text-sm text-slate-700">{{ resident['N° de chambre'] || '' }}</td>
-                <td class="py-2 px-3 text-sm font-medium text-slate-800">{{ resident.fullName || '' }}</td>
-                <td class="py-2 px-3 text-sm text-slate-700">{{ resident['Âge'] || '' }}</td>
-                <td class="py-2 px-3 text-sm text-slate-700">{{ formatDate(resident.birthDate) }}</td>
-                <td class="py-2 px-3 text-sm text-slate-700">{{ formatDate(resident['Entrée']) }}</td>
-                <td class="py-2 px-3 text-sm text-slate-700">{{ resident['GIR'] || '' }}</td>
-                <td class="py-2 px-3 text-sm text-slate-700" v-html="resident.evals.MMSE ? `${resident.evals.MMSE.date}<br><span class='font-bold text-slate-800'>${resident.evals.MMSE.result}</span>` : 'N/A'"></td>
-                <td class="py-2 px-3 text-sm text-slate-700" v-html="resident.evals.GDS ? `${resident.evals.GDS.date}<br><span class='font-bold text-slate-800'>${resident.evals.GDS.result}</span>` : 'N/A'"></td>
-                <td class="py-2 px-3 text-sm text-slate-700" v-html="resident.evals.RUD ? `${resident.evals.RUD.date}<br><span class='font-bold text-slate-800'>${resident.evals.RUD.result}</span>` : 'N/A'"></td>
-                <td class="py-2 px-3 text-sm text-slate-700" v-html="resident.evals.NPIES ? `${resident.evals.NPIES.date}<br><span class='font-bold text-slate-800'>${resident.evals.NPIES.result}</span>` : 'N/A'"></td>
+            <tbody class="mdc-data-table__content">
+              <tr v-for="(resident, index) in processedData" :key="resident.normalizedName" class="mdc-data-table__row">
+                <td class="mdc-data-table__cell">{{ resident['N° de chambre'] || '' }}</td>
+                <td class="mdc-data-table__cell">{{ resident.fullName || '' }}</td>
+                <td class="mdc-data-table__cell">{{ resident['Âge'] || '' }}</td>
+                <td class="mdc-data-table__cell">{{ formatDate(resident.birthDate) }}</td>
+                <td class="mdc-data-table__cell">{{ formatDate(resident['Entrée']) }}</td>
+                <td class="mdc-data-table__cell">{{ resident['GIR'] || '' }}</td>
+                <td class="mdc-data-table__cell" v-html="resident.evals.MMSE ? `${resident.evals.MMSE.date}<br><span class='font-bold'>${resident.evals.MMSE.result}</span>` : 'N/A'"></td>
+                <td class="mdc-data-table__cell" v-html="resident.evals.GDS ? `${resident.evals.GDS.date}<br><span class='font-bold'>${resident.evals.GDS.result}</span>` : 'N/A'"></td>
+                <td class="mdc-data-table__cell" v-html="resident.evals.RUD ? `${resident.evals.RUD.date}<br><span class='font-bold'>${resident.evals.RUD.result}</span>` : 'N/A'"></td>
+                <td class="mdc-data-table__cell" v-html="resident.evals.NPIES ? `${resident.evals.NPIES.date}<br><span class='font-bold'>${resident.evals.NPIES.result}</span>` : 'N/A'"></td>
               </tr>
             </tbody>
           </table>

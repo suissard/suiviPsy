@@ -10,6 +10,9 @@ export default defineConfig({
     vue(),
     viteSingleFile()
   ],
+  build: {
+    emptyOutDir: false,
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

@@ -275,104 +275,85 @@ function exportReport() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col items-center py-8 px-4 bg-slate-50 text-slate-800 mdc-typography">
+  <main class="min-h-screen flex flex-col items-center py-8 px-4 bg-slate-50 text-slate-800">
     <!-- Input Section -->
     <div class="w-full max-w-4xl bg-white p-6 md:p-8 rounded-2xl shadow-lg">
       <div class="grid md:grid-cols-2 gap-x-6 gap-y-4">
         <!-- Residents File Input -->
         <div class="flex flex-col">
           <label for="residentsFile" class="mb-1.5 font-medium text-slate-700 text-sm">1. Fichier des Résidents (.xlsx, .csv)</label>
-          <div class="mdc-text-field mdc-text-field--outlined" @click="residentsFileInput.click()">
-            <input type="text" class="mdc-text-field__input" :value="residentsFileStatus" readonly>
-            <div class="mdc-notched-outline">
-              <div class="mdc-notched-outline__leading"></div>
-              <div class="mdc-notched-outline__notch">
-                <label class="mdc-floating-label">Fichier des Résidents</label>
-              </div>
-              <div class="mdc-notched-outline__trailing"></div>
-            </div>
-          </div>
-          <input type="file" id="residentsFile" ref="residentsFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="e => handleFileSelect(e, 'resident')">
+          <input type="file" id="residentsFile" ref="residentsFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" @change="e => handleFileSelect(e, 'resident')">
         </div>
 
         <!-- Evaluations File Input -->
         <div class="flex flex-col">
           <label for="evaluationsFile" class="mb-1.5 font-medium text-slate-700 text-sm">2. Fichier des Évaluations (.xlsx, .csv)</label>
-          <div class="mdc-text-field mdc-text-field--outlined" @click="evaluationsFileInput.click()">
-            <input type="text" class="mdc-text-field__input" :value="evaluationsFileStatus" readonly>
-            <div class="mdc-notched-outline">
-              <div class="mdc-notched-outline__leading"></div>
-              <div class="mdc-notched-outline__notch">
-                <label class="mdc-floating-label">Fichier des Évaluations</label>
-              </div>
-              <div class="mdc-notched-outline__trailing"></div>
-            </div>
-          </div>
-          <input type="file" id="evaluationsFile" ref="evaluationsFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="e => handleFileSelect(e, 'evaluation')">
+          <input type="file" id="evaluationsFile" ref="evaluationsFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" @change="e => handleFileSelect(e, 'evaluation')">
         </div>
       </div>
 
       <div class="mt-6 text-center">
         <button @click="generateReport" :disabled="isGenerateBtnDisabled"
-          class="mdc-button mdc-button--raised">
-          <span class="mdc-button__label">{{ generating ? 'Génération en cours...' : 'Générer le rapport' }}</span>
+          class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ generating ? 'Génération en cours...' : 'Générer le rapport' }}
         </button>
       </div>
       <p v-if="errorMessage" class="text-red-500 text-center mt-4 text-sm font-medium">{{ errorMessage }}</p>
     </div>
 
     <!-- Output Section -->
-    <div v-if="outputSectionVisible" class="w-full max-w-full mt-8">
-      <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
-        <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
-          <h2 class="text-xl font-semibold text-slate-800">Rapport Généré</h2>
-          <div class="action-buttons flex gap-2">
-             <button @click="exportReport" class="bg-white text-slate-700 font-semibold py-2 px-4 rounded-md border border-slate-300 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-150 ease-in-out flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                Exporter
-            </button>
-            <button @click="printReport" class="bg-white text-slate-700 font-semibold py-2 px-4 rounded-md border border-slate-300 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-150 ease-in-out flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm7-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                Imprimer
-            </button>
+    <template v-if="outputSectionVisible">
+      <div class="w-full max-w-full mt-8">
+        <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+          <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+            <h2 class="text-xl font-semibold text-slate-800">Rapport Généré</h2>
+            <div class="action-buttons flex gap-2">
+               <button @click="exportReport" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-150 ease-in-out flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  Exporter
+              </button>
+              <button @click="printReport" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-150 ease-in-out flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm7-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                  Imprimer
+              </button>
+            </div>
+          </div>
+          <div id="print-section" class="overflow-x-auto rounded-lg border border-slate-200/75">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead class="bg-slate-100">
+                <tr>
+                  <th @click="sortData('N° de chambre')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Ch.</th>
+                  <th @click="sortData('fullName')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nom Prénom</th>
+                  <th @click="sortData('Âge')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Age</th>
+                  <th @click="sortData('birthDate')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Naissance</th>
+                  <th @click="sortData('Entrée')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Entrée</th>
+                  <th @click="sortData('GIR')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">GIR</th>
+                  <th @click="sortData('MMSE')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">MMSE</th>
+                  <th @click="sortData('GDS')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">GDS</th>
+                  <th @click="sortData('RUD')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">RUD</th>
+                  <th @click="sortData('NPIES')" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">NPI-ES</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-slate-200">
+                <tr v-for="(resident, index) in processedData" :key="resident.normalizedName" :class="{'bg-slate-50': index % 2 !== 0}">
+                  <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-700">{{ resident['N° de chambre'] || '' }}</td>
+                  <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-700">{{ resident.fullName || '' }}</td>
+                  <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-700">{{ resident['Âge'] || '' }}</td>
+                  <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-700">{{ formatDate(resident.birthDate) }}</td>
+                  <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-700">{{ formatDate(resident['Entrée']) }}</td>
+                  <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-700">{{ resident['GIR'] || '' }}</td>
+                  <td class="px-3 py-2 text-sm text-slate-700" v-html="resident.evals.MMSE ? `${resident.evals.MMSE.date}<br><span class='font-bold'>${resident.evals.MMSE.result}</span>` : 'N/A'"></td>
+                  <td class="px-3 py-2 text-sm text-slate-700" v-html="resident.evals.GDS ? `${resident.evals.GDS.date}<br><span class='font-bold'>${resident.evals.GDS.result}</span>` : 'N/A'"></td>
+                  <td class="px-3 py-2 text-sm text-slate-700" v-html="resident.evals.RUD ? `${resident.evals.RUD.date}<br><span class='font-bold'>${resident.evals.RUD.result}</span>` : 'N/A'"></td>
+                  <td class="px-3 py-2 text-sm text-slate-700" v-html="resident.evals.NPIES ? `${resident.evals.NPIES.date}<br><span class='font-bold'>${resident.evals.NPIES.result}</span>` : 'N/A'"></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <div id="print-section" class="overflow-x-auto rounded-lg border border-slate-200/75">
-          <table class="mdc-data-table__table">
-            <thead class="mdc-data-table__header">
-              <tr class="mdc-data-table__header-row">
-                <th @click="sortData('N° de chambre')" class="mdc-data-table__header-cell">Ch.</th>
-                <th @click="sortData('fullName')" class="mdc-data-table__header-cell">Nom Prénom</th>
-                <th @click="sortData('Âge')" class="mdc-data-table__header-cell">Age</th>
-                <th @click="sortData('birthDate')" class="mdc-data-table__header-cell">Naissance</th>
-                <th @click="sortData('Entrée')" class="mdc-data-table__header-cell">Entrée</th>
-                <th @click="sortData('GIR')" class="mdc-data-table__header-cell">GIR</th>
-                <th @click="sortData('MMSE')" class="mdc-data-table__header-cell">MMSE</th>
-                <th @click="sortData('GDS')" class="mdc-data-table__header-cell">GDS</th>
-                <th @click="sortData('RUD')" class="mdc-data-table__header-cell">RUD</th>
-                <th @click="sortData('NPIES')" class="mdc-data-table__header-cell">NPI-ES</th>
-                <th class="mdc-data-table__header-cell"></th>
-              </tr>
-            </thead>
-            <tbody class="mdc-data-table__content">
-              <tr v-for="(resident, index) in processedData" :key="resident.normalizedName" class="mdc-data-table__row">
-                <td class="mdc-data-table__cell">{{ resident['N° de chambre'] || '' }}</td>
-                <td class="mdc-data-table__cell">{{ resident.fullName || '' }}</td>
-                <td class="mdc-data-table__cell">{{ resident['Âge'] || '' }}</td>
-                <td class="mdc-data-table__cell">{{ formatDate(resident.birthDate) }}</td>
-                <td class="mdc-data-table__cell">{{ formatDate(resident['Entrée']) }}</td>
-                <td class="mdc-data-table__cell">{{ resident['GIR'] || '' }}</td>
-                <td class="mdc-data-table__cell" v-html="resident.evals.MMSE ? `${resident.evals.MMSE.date}<br><span class='font-bold'>${resident.evals.MMSE.result}</span>` : 'N/A'"></td>
-                <td class="mdc-data-table__cell" v-html="resident.evals.GDS ? `${resident.evals.GDS.date}<br><span class='font-bold'>${resident.evals.GDS.result}</span>` : 'N/A'"></td>
-                <td class="mdc-data-table__cell" v-html="resident.evals.RUD ? `${resident.evals.RUD.date}<br><span class='font-bold'>${resident.evals.RUD.result}</span>` : 'N/A'"></td>
-                <td class="mdc-data-table__cell" v-html="resident.evals.NPIES ? `${resident.evals.NPIES.date}<br><span class='font-bold'>${resident.evals.NPIES.result}</span>` : 'N/A'"></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </main>
 </template>
 
 <style scoped>

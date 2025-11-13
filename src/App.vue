@@ -274,19 +274,41 @@ const headers = [
                 'items-per-page-options': [10, 25, 50, -1]
               }"
             >
-              <template v-slot:item="{ item, columns }">
+              <template v-slot:item="{ item }">
                 <tr>
-                  <td v-for="column in columns" :key="column.key" :class="`text-${column.align}`">
-                    <div v-if="column.key.startsWith('evals.')">
-                      <div v-if="item.evals[column.key.split('.')[1]]" class="text-center">
-                        <div class="text-caption">{{ item.evals[column.key.split('.')[1]].date }}</div>
-                        <v-chip size="small" class="font-weight-bold">{{ item.evals[column.key.split('.')[1]].result }}</v-chip>
-                      </div>
-                      <div v-else class="text-center text-grey">N/A</div>
+                  <td>{{ item['N° de chambre'] }}</td>
+                  <td>{{ item.fullName }}</td>
+                  <td>{{ item['Âge'] }}</td>
+                  <td>{{ formatDate(item.birthDate) }}</td>
+                  <td>{{ formatDate(item['Entrée']) }}</td>
+                  <td>{{ item.GIR }}</td>
+                  <td class="text-center">
+                    <div v-if="item.evals.MMSE">
+                      <div class="text-caption">{{ item.evals.MMSE.date }}</div>
+                      <v-chip size="small" class="font-weight-bold">{{ item.evals.MMSE.result }}</v-chip>
                     </div>
-                     <div v-else>
-                      {{ column.value ? column.value(item) : item[column.key] }}
+                    <div v-else class="text-grey">N/A</div>
+                  </td>
+                  <td class="text-center">
+                    <div v-if="item.evals.GDS">
+                      <div class="text-caption">{{ item.evals.GDS.date }}</div>
+                      <v-chip size="small" class="font-weight-bold">{{ item.evals.GDS.result }}</v-chip>
                     </div>
+                    <div v-else class="text-grey">N/A</div>
+                  </td>
+                  <td class="text-center">
+                    <div v-if="item.evals.RUD">
+                      <div class="text-caption">{{ item.evals.RUD.date }}</div>
+                      <v-chip size="small" class="font-weight-bold">{{ item.evals.RUD.result }}</v-chip>
+                    </div>
+                    <div v-else class="text-grey">N/A</div>
+                  </td>
+                  <td class="text-center">
+                    <div v-if="item.evals.NPIES">
+                      <div class="text-caption">{{ item.evals.NPIES.date }}</div>
+                      <v-chip size="small" class="font-weight-bold">{{ item.evals.NPIES.result }}</v-chip>
+                    </div>
+                    <div v-else class="text-grey">N/A</div>
                   </td>
                 </tr>
               </template>

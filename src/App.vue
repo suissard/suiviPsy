@@ -12,6 +12,8 @@ const generating = ref(false);
 
 const residentsFile = ref(null);
 const evaluationsFile = ref(null);
+const residentsFileValid = ref(false);
+const evaluationsFileValid = ref(false);
 
 // --- Computed Properties ---
 const isGenerateBtnDisabled = computed(() => {
@@ -19,27 +21,23 @@ const isGenerateBtnDisabled = computed(() => {
 });
 
 // --- File Processing ---
-async function handleFileSelect(files, fileType) {
-  const file = files[0];
+async function handleFileSelect(file, fileType) {
+  const fileCache = fileType === 'resident' ? residentsDataCache : evaluationsDataCache;
+  const fileValid = fileType === 'resident' ? residentsFileValid : evaluationsFileValid;
+
   if (!file) {
-    if (fileType === 'resident') {
-      residentsDataCache.value = null;
-    } else {
-      evaluationsDataCache.value = null;
-    }
+    fileCache.value = null;
+    fileValid.value = false;
     return;
   }
 
   try {
     const data = await processFile(file);
-    if (fileType === 'resident') {
-      residentsDataCache.value = data;
-    } else {
-      evaluationsDataCache.value = data;
-    }
+    fileCache.value = data;
+    fileValid.value = true;
   } catch (error) {
-    if (fileType === 'resident') residentsDataCache.value = null;
-    else evaluationsDataCache.value = null;
+    fileCache.value = null;
+    fileValid.value = false;
     errorMessage.value = `Erreur: impossible de lire "${file.name}"`;
     console.error("File processing error:", error);
   }
@@ -57,7 +55,7 @@ function processFile(file) {
           jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
         } else {
           const text = new TextDecoder('iso-8859-1').decode(data);
-          const rows = text.split('\\n').filter(row => row.trim());
+          const rows = text.split('\n').filter(row => row.trim());
           if (rows.length < 2) return resolve([]);
           const header = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
           jsonData = rows.slice(1).map(row => {
@@ -221,10 +219,11 @@ const headers = [
                   v-model="residentsFile"
                   label="1. Fichier des Résidents (.xlsx, .csv)"
                   accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                  @update:modelValue="files => handleFileSelect(files, 'resident')"
+                  @update:modelValue="file => handleFileSelect(file, 'resident')"
                   prepend-icon="mdi-account-group"
                   variant="outlined"
                   clearable
+                  :success="residentsFileValid"
                 ></v-file-input>
               </v-col>
               <v-col cols="12" md="6">
@@ -232,10 +231,11 @@ const headers = [
                   v-model="evaluationsFile"
                   label="2. Fichier des Évaluations (.xlsx, .csv)"
                   accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                  @update:modelValue="files => handleFileSelect(files, 'evaluation')"
+                  @update:modelValue="file => handleFileSelect(file, 'evaluation')"
                    prepend-icon="mdi-file-chart"
                    variant="outlined"
                    clearable
+                   :success="evaluationsFileValid"
                 ></v-file-input>
               </v-col>
             </v-row>

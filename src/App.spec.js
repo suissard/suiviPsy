@@ -2,25 +2,39 @@ import { describe, it, expect, test, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import App from './App.vue';
 import * as XLSX from 'xlsx';
+import { createVuetify } from 'vuetify';
+
+const vuetify = createVuetify();
+
+// Helper function to mount the component with Vuetify
+const mountComponent = () => {
+  return mount(App, {
+    global: {
+      plugins: [vuetify],
+    },
+  });
+};
 
 describe('App.vue', () => {
   it('renders the component', () => {
-    const wrapper = mount(App);
+    const wrapper = mountComponent();
     expect(wrapper.exists()).toBe(true);
   });
 
   it('should have the output section hidden initially', () => {
-    const wrapper = mount(App);
-    expect(wrapper.find('.output-section').exists()).toBe(false);
+    const wrapper = mountComponent();
+    expect(wrapper.find('.v-data-table').exists()).toBe(false);
   });
 
-  it('should have the generate button disabled initially', () => {
-    const wrapper = mount(App);
-    expect(wrapper.find('button.bg-blue-600').attributes('disabled')).toBeDefined();
+  it('should have the generate button disabled initially', async () => {
+    const wrapper = mountComponent();
+    await wrapper.vm.$nextTick();
+    const button = wrapper.findComponent({ name: 'VBtn' });
+    expect(button.props('disabled')).toBe(true);
   });
 
   it('should show an error message if generate is clicked without files', async () => {
-    const wrapper = mount(App);
+    const wrapper = mountComponent();
     wrapper.vm.residentsDataCache = null;
     wrapper.vm.evaluationsDataCache = null;
     await wrapper.vm.$nextTick();
@@ -31,7 +45,7 @@ describe('App.vue', () => {
 });
 
 describe('formatDate', () => {
-    const wrapper = mount(App);
+    const wrapper = mountComponent();
     const formatDate = wrapper.vm.formatDate;
 
     it('should format a valid date object correctly', () => {
@@ -56,7 +70,7 @@ describe('formatDate', () => {
 });
 
 describe('processFile', () => {
-    const wrapper = mount(App);
+    const wrapper = mountComponent();
     const processFile = wrapper.vm.processFile;
 
     it('should process a .xlsx file correctly', async () => {
@@ -90,7 +104,7 @@ describe('processFile', () => {
 
 describe('generateReport', () => {
     it('should correctly process and merge resident and evaluation data', async () => {
-        const wrapper = mount(App);
+        const wrapper = mountComponent();
 
         const residentsData = [
             { 'Résident': 'M. DUPONT Jean (H)', 'N° de chambre': '101', 'Âge': 60, 'Date naissance': new Date('1963-01-01'), 'Dernière entrée': new Date('2023-01-01'), 'GIR': '4' },
@@ -115,7 +129,7 @@ describe('generateReport', () => {
 });
 
 describe('normalizeName', () => {
-    const wrapper = mount(App);
+    const wrapper = mountComponent();
     const normalizeName = wrapper.vm.normalizeName;
 
     test('should return an empty string for empty or invalid input', () => {

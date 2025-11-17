@@ -14,6 +14,10 @@ const residentsFile = ref(null);
 const evaluationsFile = ref(null);
 const residentsFileValid = ref(false);
 const evaluationsFileValid = ref(false);
+const residentsFileError = ref(false);
+const evaluationsFileError = ref(false);
+const residentsFileMessage = ref('');
+const evaluationsFileMessage = ref('');
 
 // --- Computed Properties ---
 const isGenerateBtnDisabled = computed(() => {
@@ -22,22 +26,58 @@ const isGenerateBtnDisabled = computed(() => {
 
 // --- File Processing ---
 async function handleFileSelect(file, fileType) {
-  const fileCache = fileType === 'resident' ? residentsDataCache : evaluationsDataCache;
-  const fileValid = fileType === 'resident' ? residentsFileValid : evaluationsFileValid;
+  const isResident = fileType === 'resident';
+  const fileCache = isResident ? residentsDataCache : evaluationsDataCache;
+  const fileValid = isResident ? residentsFileValid : evaluationsFileValid;
+  const fileError = isResident ? residentsFileError : evaluationsFileError;
+  const fileMessage = isResident ? residentsFileMessage : evaluationsFileMessage;
 
+  // Reset state when file is cleared
   if (!file) {
     fileCache.value = null;
     fileValid.value = false;
+    fileError.value = false;
+    fileMessage.value = '';
+    errorMessage.value = ''; // Also clear global error if any
     return;
   }
 
   try {
     const data = await processFile(file);
+    if (!data || data.length === 0) {
+      fileCache.value = null;
+      fileValid.value = false;
+      fileError.value = true;
+      fileMessage.value = 'Fichier vide ou format non reconnu.';
+      return;
+    }
+
     fileCache.value = data;
     fileValid.value = true;
+    fileError.value = false;
+
+    if (isResident) {
+      fileMessage.value = `${data.length} résidents détectés.`;
+    } else {
+      const testCounts = data.reduce((acc, ev) => {
+        if (!ev['Type']) return acc;
+        let typeKey = ['MMSE', 'GDS', 'RUD', 'NPI-ES'].find(k => ev['Type'].includes(k.replace('NPI-ES', 'NPIES')));
+        if (typeKey) {
+          if(typeKey === 'NPI-ES') typeKey = 'NPIES';
+          acc[typeKey] = (acc[typeKey] || 0) + 1;
+        }
+        return acc;
+      }, {});
+      const summary = Object.entries(testCounts)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+      fileMessage.value = summary ? `Tests détectés: ${summary}.` : 'Aucun test reconnu trouvé.';
+    }
   } catch (error) {
     fileCache.value = null;
     fileValid.value = false;
+    fileError.value = true;
+    fileMessage.value = '';
     errorMessage.value = `Erreur: impossible de lire "${file.name}"`;
     console.error("File processing error:", error);
   }
@@ -224,6 +264,8 @@ const headers = [
                   variant="outlined"
                   clearable
                   :success="residentsFileValid"
+                  :error="residentsFileError"
+                  :messages="residentsFileMessage"
                 ></v-file-input>
               </v-col>
               <v-col cols="12" md="6">
@@ -236,6 +278,8 @@ const headers = [
                    variant="outlined"
                    clearable
                    :success="evaluationsFileValid"
+                   :error="evaluationsFileError"
+                   :messages="evaluationsFileMessage"
                 ></v-file-input>
               </v-col>
             </v-row>

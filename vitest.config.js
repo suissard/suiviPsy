@@ -11,7 +11,9 @@ export default mergeConfig(
       exclude: [...configDefaults.exclude, 'e2e/**'],
       root: fileURLToPath(new URL('./', import.meta.url))
     },
-    // This is a hack to remove the single file plugin that hangs the tests
-    plugins: viteConfig.plugins.filter(plugin => plugin.name !== 'vite:singlefile'),
+    // This is a hack to remove plugins that cause issues with tests
+    plugins: viteConfig.plugins.filter(plugin =>
+      plugin.name !== 'vite:singlefile' && plugin.name !== 'vuetify'
+    ),
   })
 )

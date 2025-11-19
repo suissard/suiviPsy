@@ -313,10 +313,8 @@ const headers = [
               :items="processedData"
               class="elevation-0"
               item-key="normalizedName"
-              :items-per-page="10"
-              :footer-props="{
-                'items-per-page-options': [10, 25, 50, -1]
-              }"
+              :items-per-page="-1"
+              hide-default-footer
             >
               <template v-slot:item="{ item }">
                 <tr>

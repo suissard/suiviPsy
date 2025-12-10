@@ -52,18 +52,42 @@ async function handleFileSelect(file, fileType) {
       return;
     }
 
-    fileCache.value = data;
-    fileValid.value = true;
-    fileError.value = false;
-
+    // Normalize and filter data
     if (isResident) {
-      fileMessage.value = `${data.length} résidents détectés.`;
+      const cleanData = data
+        .map(row => {
+          // Alias 'Noms / Prénoms' to 'Résident'
+          if (!row['Résident'] && row['Noms / Prénoms']) {
+            row['Résident'] = row['Noms / Prénoms'];
+          }
+          return row;
+        })
+        .filter(row => {
+          // Filter out rows without a valid name (removes metadata lines)
+          return row['Résident'] && typeof row['Résident'] === 'string' && row['Résident'].trim().length > 0;
+        });
+
+      if (cleanData.length === 0) {
+        fileCache.value = null;
+        fileValid.value = false;
+        fileError.value = true;
+        fileMessage.value = 'Aucun résident valide trouvé (vérifiez les colonnes "Résident" ou "Noms / Prénoms").';
+        return;
+      }
+      fileCache.value = cleanData;
+      fileValid.value = true;
+      fileError.value = false;
+      fileMessage.value = `${cleanData.length} résidents détectés.`;
     } else {
+      fileCache.value = data;
+      fileValid.value = true;
+      fileError.value = false;
+
       const testCounts = data.reduce((acc, ev) => {
         if (!ev['Type']) return acc;
         let typeKey = ['MMSE', 'GDS', 'RUD', 'NPI-ES'].find(k => ev['Type'].includes(k.replace('NPI-ES', 'NPIES')));
         if (typeKey) {
-          if(typeKey === 'NPI-ES') typeKey = 'NPIES';
+          if (typeKey === 'NPI-ES') typeKey = 'NPIES';
           acc[typeKey] = (acc[typeKey] || 0) + 1;
         }
         return acc;
@@ -157,7 +181,7 @@ async function generateReport() {
       if (!evDate) return;
 
       let typeKey = ['MMSE', 'GDS', 'RUD', 'NPI-ES'].find(k => ev['Type'].includes(k.replace('NPI-ES', 'NPIES')));
-      if(typeKey === 'NPI-ES') typeKey = 'NPIES';
+      if (typeKey === 'NPI-ES') typeKey = 'NPIES';
       const resultRaw = ev['Résultat'];
       let result;
       if (typeof resultRaw === 'string') {
@@ -179,13 +203,19 @@ async function generateReport() {
       }
     });
 
+
+
     processedData.value = residentsDataCache.value.map(r => {
       const normalizedName = normalizeResidentName(r['Résident']);
       const evals = residentEvals[normalizedName] || {};
+
+      // Handle the key variation for Room Number
+      const roomNum = r['N° de chambre'] || r['Chambre / Sous-secteur / Secteur'] || '';
+
       return {
         'fullName': r['Résident'],
         'normalizedName': normalizedName,
-        'N° de chambre': r['N° de chambre'],
+        'N° de chambre': roomNum,
         'Âge': r['Âge'],
         'birthDate': r['Date naissance'],
         'Entrée': r['Dernière entrée'] || r['Entrée'],
@@ -193,6 +223,7 @@ async function generateReport() {
         evals,
       };
     });
+
 
     outputSectionVisible.value = true;
   } catch (error) {
@@ -255,47 +286,28 @@ const headers = [
           <v-card-text>
             <v-row>
               <v-col cols="12" md="6">
-                <v-file-input
-                  v-model="residentsFile"
-                  label="1. Fichier des Résidents (.xlsx, .csv)"
+                <v-file-input v-model="residentsFile" label="1. Fichier des Résidents (.xlsx, .csv)"
                   accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                  @update:modelValue="file => handleFileSelect(file, 'resident')"
-                  prepend-icon="mdi-account-group"
-                  variant="outlined"
-                  clearable
-                  :success="residentsFileValid"
-                  :error="residentsFileError"
-                  :messages="residentsFileMessage"
-                ></v-file-input>
+                  @update:modelValue="file => handleFileSelect(file, 'resident')" prepend-icon="mdi-account-group"
+                  variant="outlined" clearable :success="residentsFileValid" :error="residentsFileError"
+                  :messages="residentsFileMessage"></v-file-input>
               </v-col>
               <v-col cols="12" md="6">
-                <v-file-input
-                  v-model="evaluationsFile"
-                  label="2. Fichier des Évaluations (.xlsx, .csv)"
+                <v-file-input v-model="evaluationsFile" label="2. Fichier des Évaluations (.xlsx, .csv)"
                   accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                  @update:modelValue="file => handleFileSelect(file, 'evaluation')"
-                   prepend-icon="mdi-file-chart"
-                   variant="outlined"
-                   clearable
-                   :success="evaluationsFileValid"
-                   :error="evaluationsFileError"
-                   :messages="evaluationsFileMessage"
-                ></v-file-input>
+                  @update:modelValue="file => handleFileSelect(file, 'evaluation')" prepend-icon="mdi-file-chart"
+                  variant="outlined" clearable :success="evaluationsFileValid" :error="evaluationsFileError"
+                  :messages="evaluationsFileMessage"></v-file-input>
               </v-col>
             </v-row>
             <div class="text-center mt-4">
-              <v-btn
-                @click="generateReport"
-                :disabled="isGenerateBtnDisabled"
-                :loading="generating"
-                color="primary"
-                size="large"
-                elevation="2"
-              >
+              <v-btn @click="generateReport" :disabled="isGenerateBtnDisabled" :loading="generating" color="primary"
+                size="large" elevation="2">
                 Générer le rapport
               </v-btn>
             </div>
-            <v-alert v-if="errorMessage" type="error" class="mt-4" dense closable @input="errorMessage = ''">{{ errorMessage }}</v-alert>
+            <v-alert v-if="errorMessage" type="error" class="mt-4" dense closable @input="errorMessage = ''">{{
+              errorMessage }}</v-alert>
           </v-card-text>
         </v-card>
 
@@ -303,52 +315,47 @@ const headers = [
           <v-card-title class="d-flex align-center pe-2">
             <h2 class="text-h5">Rapport Généré</h2>
             <v-spacer></v-spacer>
-            <v-btn @click="exportReport" color="secondary" class="mr-2" prepend-icon="mdi-download" variant="tonal">Exporter</v-btn>
+            <v-btn @click="exportReport" color="secondary" class="mr-2" prepend-icon="mdi-download"
+              variant="tonal">Exporter</v-btn>
             <v-btn @click="printReport" color="secondary" prepend-icon="mdi-printer" variant="tonal">Imprimer</v-btn>
           </v-card-title>
           <v-divider></v-divider>
           <v-card-text class="pa-0">
-            <v-data-table
-              :headers="headers"
-              :items="processedData"
-              class="elevation-0"
-              item-key="normalizedName"
-              :items-per-page="-1"
-              hide-default-footer
-            >
+            <v-data-table :headers="headers" :items="processedData" class="elevation-0" item-key="normalizedName"
+              :items-per-page="-1" hide-default-footer>
               <template v-slot:item="{ item }">
                 <tr>
-                  <td>{{ item['N° de chambre'] }}</td>
-                  <td>{{ item.fullName }}</td>
-                  <td>{{ item['Âge'] }}</td>
-                  <td>{{ formatDate(item.birthDate) }}</td>
-                  <td>{{ formatDate(item['Entrée']) }}</td>
-                  <td>{{ item.GIR }}</td>
+                  <td>{{ (item.raw || item)['N° de chambre'] }}</td>
+                  <td>{{ (item.raw || item).fullName }}</td>
+                  <td>{{ (item.raw || item)['Âge'] }}</td>
+                  <td>{{ formatDate((item.raw || item).birthDate) }}</td>
+                  <td>{{ formatDate((item.raw || item)['Entrée']) }}</td>
+                  <td>{{ (item.raw || item).GIR }}</td>
                   <td class="text-center">
-                    <div v-if="item.evals.MMSE">
-                      <div class="text-caption">{{ item.evals.MMSE.date }}</div>
-                      <v-chip size="small" class="font-weight-bold">{{ item.evals.MMSE.result }}</v-chip>
+                    <div v-if="(item.raw || item).evals.MMSE">
+                      <div class="text-caption">{{ (item.raw || item).evals.MMSE.date }}</div>
+                      <v-chip size="small" class="font-weight-bold">{{ (item.raw || item).evals.MMSE.result }}</v-chip>
                     </div>
                     <div v-else class="text-grey">N/A</div>
                   </td>
                   <td class="text-center">
-                    <div v-if="item.evals.GDS">
-                      <div class="text-caption">{{ item.evals.GDS.date }}</div>
-                      <v-chip size="small" class="font-weight-bold">{{ item.evals.GDS.result }}</v-chip>
+                    <div v-if="(item.raw || item).evals.GDS">
+                      <div class="text-caption">{{ (item.raw || item).evals.GDS.date }}</div>
+                      <v-chip size="small" class="font-weight-bold">{{ (item.raw || item).evals.GDS.result }}</v-chip>
                     </div>
                     <div v-else class="text-grey">N/A</div>
                   </td>
                   <td class="text-center">
-                    <div v-if="item.evals.RUD">
-                      <div class="text-caption">{{ item.evals.RUD.date }}</div>
-                      <v-chip size="small" class="font-weight-bold">{{ item.evals.RUD.result }}</v-chip>
+                    <div v-if="(item.raw || item).evals.RUD">
+                      <div class="text-caption">{{ (item.raw || item).evals.RUD.date }}</div>
+                      <v-chip size="small" class="font-weight-bold">{{ (item.raw || item).evals.RUD.result }}</v-chip>
                     </div>
                     <div v-else class="text-grey">N/A</div>
                   </td>
                   <td class="text-center">
-                    <div v-if="item.evals.NPIES">
-                      <div class="text-caption">{{ item.evals.NPIES.date }}</div>
-                      <v-chip size="small" class="font-weight-bold">{{ item.evals.NPIES.result }}</v-chip>
+                    <div v-if="(item.raw || item).evals.NPIES">
+                      <div class="text-caption">{{ (item.raw || item).evals.NPIES.date }}</div>
+                      <v-chip size="small" class="font-weight-bold">{{ (item.raw || item).evals.NPIES.result }}</v-chip>
                     </div>
                     <div v-else class="text-grey">N/A</div>
                   </td>

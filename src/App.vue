@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import * as XLSX from 'xlsx';
+import { cleanDisplayName, naturalSort } from './utils';
 
 // --- State ---
 const residentsDataCache = ref(null);
@@ -186,7 +187,7 @@ async function generateReport() {
       let result;
       if (typeof resultRaw === 'string') {
         if (resultRaw.trim() === 'Non évaluable' || resultRaw.trim() === 'Non évaluable Résident non évaluable') {
-          result = 'NE';
+          result = 'NA';
         } else {
           const match = resultRaw.match(/^\s*\d+/);
           result = match ? match[0].trim() : resultRaw;
@@ -213,7 +214,7 @@ async function generateReport() {
       const roomNum = r['N° de chambre'] || r['Chambre / Sous-secteur / Secteur'] || '';
 
       return {
-        'fullName': r['Résident'],
+        'fullName': cleanDisplayName(r['Résident']),
         'normalizedName': normalizedName,
         'N° de chambre': roomNum,
         'Âge': r['Âge'],
@@ -222,7 +223,7 @@ async function generateReport() {
         'GIR': r['GIR'],
         evals,
       };
-    });
+    }).sort((a, b) => naturalSort(a['N° de chambre'], b['N° de chambre']));
 
 
     outputSectionVisible.value = true;
@@ -322,7 +323,7 @@ const headers = [
           <v-divider></v-divider>
           <v-card-text class="pa-0">
             <v-data-table :headers="headers" :items="processedData" class="elevation-0" item-key="normalizedName"
-              :items-per-page="-1" hide-default-footer>
+              :items-per-page="-1" hide-default-footer density="compact">
               <template v-slot:item="{ item }">
                 <tr>
                   <td>{{ (item.raw || item)['N° de chambre'] }}</td>
@@ -333,28 +334,24 @@ const headers = [
                   <td>{{ (item.raw || item).GIR }}</td>
                   <td class="text-center">
                     <div v-if="(item.raw || item).evals.MMSE">
-                      <div class="text-caption">{{ (item.raw || item).evals.MMSE.date }}</div>
                       <v-chip size="small" class="font-weight-bold">{{ (item.raw || item).evals.MMSE.result }}</v-chip>
                     </div>
                     <div v-else class="text-grey">N/A</div>
                   </td>
                   <td class="text-center">
                     <div v-if="(item.raw || item).evals.GDS">
-                      <div class="text-caption">{{ (item.raw || item).evals.GDS.date }}</div>
                       <v-chip size="small" class="font-weight-bold">{{ (item.raw || item).evals.GDS.result }}</v-chip>
                     </div>
                     <div v-else class="text-grey">N/A</div>
                   </td>
                   <td class="text-center">
                     <div v-if="(item.raw || item).evals.RUD">
-                      <div class="text-caption">{{ (item.raw || item).evals.RUD.date }}</div>
                       <v-chip size="small" class="font-weight-bold">{{ (item.raw || item).evals.RUD.result }}</v-chip>
                     </div>
                     <div v-else class="text-grey">N/A</div>
                   </td>
                   <td class="text-center">
                     <div v-if="(item.raw || item).evals.NPIES">
-                      <div class="text-caption">{{ (item.raw || item).evals.NPIES.date }}</div>
                       <v-chip size="small" class="font-weight-bold">{{ (item.raw || item).evals.NPIES.result }}</v-chip>
                     </div>
                     <div v-else class="text-grey">N/A</div>

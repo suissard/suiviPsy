@@ -9,6 +9,7 @@ const processedData = ref([]);
 const errorMessage = ref('');
 const outputSectionVisible = ref(false);
 const generating = ref(false);
+const showInputForm = ref(true);
 
 const residentsFile = ref(null);
 const evaluationsFile = ref(null);
@@ -138,12 +139,13 @@ function processFile(file) {
 // --- Data Normalization & Interpretation ---
 const formatDate = (date) => date instanceof Date ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}` : (date || '');
 
+const nameRegex = /^"?\s*(?<title>M\.|Mme\.)\s+(?<lastName>[A-Z'-]+(?:\s[A-Z'-]+)*)\s+(?<firstName>[A-Za-zÀ-ÿ'-]+(?:(?:,\s*|\s|-)[A-Za-zÀ-ÿ'-]+)*?)\s*(?:\s*Née\s+(?<maidenLastName>[A-Z'-]+(?:\s[A-Z'-]+)*)\s+(?<maidenFirstName>[A-Za-zÀ-ÿ'-]+(?:(?:,\s*|\s|-)[A-Za-zÀ-ÿ'-]+)*))?\s*\((?<gender>F|H)\)(?:\s*(?<nir>\d{15})\s*\[NIR\])?\s*"?$/;
+
 function normalizeName(rawName) {
   if (typeof rawName !== 'string' || !rawName.trim()) {
     return '';
   }
   const singleLineName = rawName.replace(/\s+/g, ' ').trim();
-  const nameRegex = /^"?\s*(?<title>M\.|Mme\.)\s+(?<lastName>[A-Z'-]+(?:\s[A-Z'-]+)*)\s+(?<firstName>[A-Za-zÀ-ÿ'-]+(?:(?:,\s*|\s|-)[A-Za-zÀ-ÿ'-]+)*?)\s*(?:\s*Née\s+(?<maidenLastName>[A-Z'-]+(?:\s[A-Z'-]+)*)\s+(?<maidenFirstName>[A-Za-zÀ-ÿ'-]+(?:(?:,\s*|\s|-)[A-Za-zÀ-ÿ'-]+)*))?\s*\((?<gender>F|H)\)(?:\s*(?<nir>\d{15})\s*\[NIR\])?\s*"?$/;
   const match = singleLineName.match(nameRegex);
   if (!match) {
     return singleLineName.replace(/^(Mme\.|M\.|Monsieur|Madame)\s*/, '').split(' (')[0].replace(/,/g, '').trim();
@@ -155,6 +157,24 @@ function normalizeName(rawName) {
 }
 
 const normalizeResidentName = (name) => normalizeName(name);
+
+function formatDisplayName(rawName) {
+  if (typeof rawName !== 'string' || !rawName.trim()) return '';
+  const singleLineName = rawName.replace(/\s+/g, ' ').trim();
+  const match = singleLineName.match(nameRegex);
+
+  if (match) {
+    const { title, lastName, firstName } = match.groups;
+    // Keep hyphenated names (Jean-Pierre) but split by space or comma for multiple first names (Jean Pierre)
+    // The user wants "Premier Prénom".
+    const firstFirstName = firstName.split(/[ ,]/)[0];
+    return `${title} ${lastName} ${firstFirstName}`;
+  }
+
+  // Fallback for names that don't match the strict regex (e.g. missing gender or Née)
+  // Try to preserve "Title Last First" if possible, or just return as is.
+  return singleLineName;
+}
 
 // --- Main Generation Logic ---
 async function generateReport() {
@@ -207,15 +227,38 @@ async function generateReport() {
 
     processedData.value = residentsDataCache.value.map(r => {
       const normalizedName = normalizeResidentName(r['Résident']);
+      const formattedName = formatDisplayName(r['Résident']);
       const evals = residentEvals[normalizedName] || {};
 
-      // Handle the key variation for Room Number
-      const roomNum = r['N° de chambre'] || r['Chambre / Sous-secteur / Secteur'] || '';
+      // Handle the key variation and parsing for Room Number
+      const rawRoomStr = r['N° de chambre'] || r['Chambre / Sous-secteur / Secteur'] || '';
+      let roomNumber = '';
+      let sector = '';
+      let floor = '';
+
+      if (rawRoomStr) {
+        const parts = rawRoomStr.split('<').map(p => p.trim());
+        if (parts.length > 0) {
+          let rawNum = parts[0];
+          // Apply naming rule for rooms ending in 12 or 13
+          if (rawNum.endsWith('13')) {
+            roomNumber = rawNum.replace(/13$/, '12B');
+          } else if (rawNum.endsWith('12')) {
+            roomNumber = rawNum.replace(/12$/, '12A');
+          } else {
+            roomNumber = rawNum;
+          }
+        }
+        if (parts.length > 1) sector = parts[1];
+        if (parts.length > 2) floor = parts[2];
+      }
 
       return {
-        'fullName': r['Résident'],
+        'fullName': formattedName,
         'normalizedName': normalizedName,
-        'N° de chambre': roomNum,
+        'roomNumber': roomNumber,
+        'sector': sector,
+        'floor': floor,
         'Âge': r['Âge'],
         'birthDate': r['Date naissance'],
         'Entrée': r['Dernière entrée'] || r['Entrée'],
@@ -226,6 +269,7 @@ async function generateReport() {
 
 
     outputSectionVisible.value = true;
+    showInputForm.value = false;
   } catch (error) {
     console.error('Error processing files:', error);
     errorMessage.value = 'Une erreur est survenue lors de la combinaison des données.';
@@ -242,7 +286,9 @@ function printReport() {
 function exportReport() {
   if (processedData.value.length === 0) return;
   const dataToExport = processedData.value.map(row => ({
-    'Ch.': row['N° de chambre'],
+    'Chbre': row.roomNumber,
+    'Secteur': row.sector,
+    'Etage': row.floor,
     'Nom Prénom': row.fullName,
     'Age': row['Âge'],
     'Naissance': formatDate(row.birthDate),
@@ -264,7 +310,9 @@ function exportReport() {
 }
 
 const headers = [
-  { title: 'Ch.', key: 'N° de chambre', align: 'start', sortable: true },
+  { title: 'Chbre', key: 'roomNumber', align: 'start', sortable: true },
+  { title: 'Secteur', key: 'sector', align: 'start', sortable: true },
+  { title: 'Etage', key: 'floor', align: 'start', sortable: true },
   { title: 'Nom Prénom', key: 'fullName', align: 'start', sortable: true },
   { title: 'Age', key: 'Âge', align: 'start', sortable: true },
   { title: 'Naissance', key: 'birthDate', align: 'start', sortable: true, value: item => formatDate(item.birthDate) },
@@ -280,8 +328,9 @@ const headers = [
 <template>
   <v-app>
     <v-main class="bg-grey-lighten-4">
-      <v-container>
-        <v-card class="mx-auto pa-4" max-width="900">
+      <v-container :fluid="outputSectionVisible" :class="outputSectionVisible ? 'pa-2' : ''">
+        <!-- Input Form Section -->
+        <v-card v-if="!outputSectionVisible || showInputForm" class="mx-auto pa-4" max-width="900">
           <v-card-title class="text-h4 text-center font-weight-bold my-4">Générateur de Rapport</v-card-title>
           <v-card-text>
             <v-row>
@@ -305,13 +354,26 @@ const headers = [
                 size="large" elevation="2">
                 Générer le rapport
               </v-btn>
+              <v-btn v-if="outputSectionVisible" @click="showInputForm = false" variant="text" class="ml-2">
+                Masquer
+              </v-btn>
             </div>
             <v-alert v-if="errorMessage" type="error" class="mt-4" dense closable @input="errorMessage = ''">{{
               errorMessage }}</v-alert>
           </v-card-text>
         </v-card>
 
-        <v-card v-if="outputSectionVisible" class="mx-auto mt-8">
+        <!-- Mini Button to show form when hidden -->
+        <div v-if="outputSectionVisible && !showInputForm" class="d-flex justify-center mb-4">
+          <v-tooltip text="Modifier les fichiers" location="right">
+            <template v-slot:activator="{ props }">
+              <v-btn icon="mdi-refresh" color="primary" @click="showInputForm = true" v-bind="props" size="small"
+                elevation="2"></v-btn>
+            </template>
+          </v-tooltip>
+        </div>
+
+        <v-card v-if="outputSectionVisible" class="mt-4 mx-auto" :style="{ width: '100%' }">
           <v-card-title class="d-flex align-center pe-2">
             <h2 class="text-h5">Rapport Généré</h2>
             <v-spacer></v-spacer>
@@ -325,7 +387,9 @@ const headers = [
               :items-per-page="-1" hide-default-footer>
               <template v-slot:item="{ item }">
                 <tr>
-                  <td>{{ (item.raw || item)['N° de chambre'] }}</td>
+                  <td>{{ (item.raw || item).roomNumber }}</td>
+                  <td>{{ (item.raw || item).sector }}</td>
+                  <td>{{ (item.raw || item).floor }}</td>
                   <td>{{ (item.raw || item).fullName }}</td>
                   <td>{{ (item.raw || item)['Âge'] }}</td>
                   <td>{{ formatDate((item.raw || item).birthDate) }}</td>
